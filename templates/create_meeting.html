@@ -1,0 +1,262 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Create Meeting</title>
+  <style>
+    body {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+      background-color: #f0f0f0;
+      font-family: Arial, sans-serif;
+    }
+
+    .container {
+      text-align: center;
+      background-color: #ffffff;
+      padding: 20px;
+      border-radius: 8px;
+      box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+      max-width: 500px;
+    }
+
+    .form-group {
+      margin-bottom: 15px;
+    }
+
+    label {
+      display: block;
+      margin-bottom: 5px;
+    }
+
+    input, textarea {
+      width: 100%;
+      padding: 8px;
+      box-sizing: border-box;
+      border: 1px solid #ccc;
+      border-radius: 4px;
+    }
+
+    .button {
+      display: inline-block;
+      padding: 10px 20px;
+      font-size: 16px;
+      color: white;
+      background-color: #007BFF;
+      text-align: center;
+      text-decoration: none;
+      border-radius: 5px;
+      border: none;
+      cursor: pointer;
+    }
+
+    .button:hover {
+      background-color: #0056b3;
+    }
+
+    .message {
+      color: green;
+      font-size: 14px;
+      margin-top: 10px;
+    }
+
+    .error {
+      color: red;
+      font-size: 14px;
+      margin-top: 10px;
+    }
+
+    .recurrence-options, .chat-options, .control-options {
+      text-align: left;
+      margin: 20px 0;
+    }
+
+    .recurrence-options label, .chat-options label, .control-options label {
+      display: block;
+      margin: 5px 0;
+    }
+
+    .recurrence-options input[type="checkbox"] {
+      margin-right: 10px;
+    }
+
+    .toggle-switch {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin: 10px 0;
+    }
+
+    .switch {
+      position: relative;
+      display: inline-block;
+      width: 60px;
+      height: 34px;
+    }
+
+    .switch input {
+      opacity: 0;
+      width: 0;
+      height: 0;
+    }
+
+    .slider {
+      position: absolute;
+      cursor: pointer;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background-color: #ccc;
+      transition: .4s;
+      border-radius: 34px;
+    }
+
+    .slider:before {
+      position: absolute;
+      content: "";
+      height: 26px;
+      width: 26px;
+      border-radius: 50%;
+      left: 4px;
+      bottom: 4px;
+      background-color: white;
+      transition: .4s;
+    }
+
+    input:checked + .slider {
+      background-color: #007BFF;
+    }
+
+    input:checked + .slider:before {
+      transform: translateX(26px);
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>Create Meeting</h1>
+    <form id="create-meeting-form" method="POST">
+      <div class="form-group">
+        <label for="meeting-name">Meeting Name:</label>
+        <input type="text" id="meeting-name" name="name" required>
+      </div>
+      <div class="form-group">
+        <label for="participant-emails">Participant Emails (comma-separated):</label>
+        <textarea id="participant-emails" name="emails" rows="4" placeholder="email1@example.com, email2@example.com" required></textarea>
+      </div>
+      <div class="recurrence-options">
+        <h2>Meeting Recurrence</h2>
+        <label><input type="checkbox" id="every-monday" name="recurrence" value="Every Monday"> Every Monday</label>
+        <label><input type="checkbox" id="every-day" name="recurrence" value="Every Day"> Every Day</label>
+        <label><input type="checkbox" id="1st-4th-saturday" name="recurrence" value="1st and 4th Saturday"> 1st and 4th Saturday</label>
+      </div>
+      <div class="chat-options">
+        <h2>Chatbox Access</h2>
+        <div class="toggle-switch">
+          <label for="chat-access-toggle" style="margin-right: 10px;">Allow participants to send text:</label>
+          <label class="switch">
+            <input type="checkbox" id="chat-access-toggle" name="chat_access" checked>
+            <span class="slider"></span>
+          </label>
+        </div>
+      </div>
+      <div class="control-options">
+        <h2>Control Options</h2>
+        <div class="toggle-switch">
+          <label for="mute-participants-toggle" style="margin-right: 10px;">Mute all participants:</label>
+          <label class="switch">
+            <input type="checkbox" id="mute-participants-toggle" name="mute_participants">
+            <span class="slider"></span>
+          </label>
+        </div>
+        <div class="toggle-switch">
+          <label for="camera-off-toggle" style="margin-right: 10px;">Turn off all participants' cameras:</label>
+          <label class="switch">
+            <input type="checkbox" id="camera-off-toggle" name="camera_off">
+            <span class="slider"></span>
+          </label>
+        </div>
+      </div>
+      <button type="submit" class="button">Create Meeting</button>
+      <button id="end-meeting-button" class="button" style="background-color: #dc3545; margin-top: 10px;">End Meeting</button>
+    </form>
+    <div id="meeting-info" class="message" style="display: none;">
+      <p>Meeting created successfully!</p>
+      <p>Meeting Code: <span id="meeting-code"></span></p>
+      <p>Meeting URL: <a id="meeting-url" href="#" target="_blank"></a></p>
+      <button id="copy-button" class="button">Copy URL</button>
+    </div>
+    <div id="error-message" class="error" style="display: none;"></div>
+  </div>
+
+  <script>
+    document.getElementById('create-meeting-form').addEventListener('submit', function(event) {
+      event.preventDefault();
+      const meetingName = document.getElementById('meeting-name').value;
+      const participantEmails = document.getElementById('participant-emails').value.split(',').map(email => email.trim());
+      const recurrenceOptions = Array.from(document.querySelectorAll('input[name="recurrence"]:checked')).map(cb => cb.value);
+      const chatAccess = document.getElementById('chat-access-toggle').checked ? 'Both' : 'Host';
+      const muteParticipants = document.getElementById('mute-participants-toggle').checked;
+      const cameraOff = document.getElementById('camera-off-toggle').checked;
+
+      // Clear previous error messages
+      document.getElementById('error-message').style.display = 'none';
+
+      // Send meeting details and invites
+      fetch('/create-meeting', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ 
+          name: meetingName, 
+          emails: participantEmails, 
+          recurrence: recurrenceOptions, 
+          chat_access: chatAccess,
+          mute_participants: muteParticipants,
+          camera_off: cameraOff 
+        })
+      }).then(response => response.json()).then(data => {
+        if (data.success) {
+          const meetingCode = data.meeting_code;
+          const meetingUrl = data.meeting_url;
+
+          // Display the meeting info
+          const meetingInfo = document.getElementById('meeting-info');
+          const meetingCodeElement = document.getElementById('meeting-code');
+          const meetingUrlElement = document.getElementById('meeting-url');
+          meetingCodeElement.textContent = meetingCode;
+          meetingUrlElement.textContent = meetingUrl;
+          meetingUrlElement.href = meetingUrl;
+          meetingInfo.style.display = 'block';
+        } else {
+          const errorMessage = document.getElementById('error-message');
+          errorMessage.textContent = data.message || 'Failed to create meeting or send invites';
+          errorMessage.style.display = 'block';
+        }
+      }).catch(error => {
+        const errorMessage = document.getElementById('error-message');
+        errorMessage.textContent = 'Error: ' + error.message;
+        errorMessage.style.display = 'block';
+      });
+    });
+
+    document.getElementById('copy-button').addEventListener('click', function() {
+      const meetingUrl = document.getElementById('meeting-url').href;
+      navigator.clipboard.writeText(meetingUrl).then(() => {
+        alert('Meeting URL copied to clipboard.');
+      }).catch(err => {
+        console.error('Failed to copy URL: ', err);
+      });
+    });
+
+    document.getElementById('end-meeting-button').addEventListener('click', function() {
+      window.location.href = '/upload';
+    });
+  </script>
+</body>
+</html>

@@ -1,0 +1,338 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Meeting</title>
+  <style>
+    body {
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+      background-color: #f0f0f0;
+      font-family: Arial, sans-serif;
+    }
+
+    video {
+      width: 600px;
+      height: 400px;
+      background-color: black;
+      margin-bottom: 20px;
+    }
+
+    .button {
+      padding: 10px 20px;
+      font-size: 16px;
+      color: white;
+      background-color: #007BFF;
+      text-align: center;
+      text-decoration: none;
+      border-radius: 5px;
+      border: none;
+      cursor: pointer;
+      margin: 5px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .button:hover {
+      background-color: #0056b3;
+    }
+
+    .button-muted {
+      background-color: #ff4c4c;
+    }
+
+    .button-muted:hover {
+      background-color: #cc0000;
+    }
+
+    .button-camera-off {
+      background-color: #ffbb33;
+    }
+
+    .button-camera-off:hover {
+      background-color: #cc9900;
+    }
+
+    .button-share {
+      background-color: #28a745;
+    }
+
+    .button-share:hover {
+      background-color: #218838;
+    }
+
+    .button-leave {
+      background-color: #dc3545;
+    }
+
+    .button-leave:hover {
+      background-color: #c82333;
+    }
+
+    .button img {
+      margin-right: 8px;
+    }
+
+    .controls {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+    }
+
+    .chat-container {
+      width: 600px;
+      max-height: 300px;
+      overflow-y: auto;
+      border: 1px solid #ccc;
+      border-radius: 4px;
+      background-color: #fff;
+      margin-top: 20px;
+      padding: 10px;
+    }
+
+    .chat-input {
+      width: 600px;
+      display: flex;
+      margin-top: 10px;
+    }
+
+    .chat-input input[type="text"] {
+      width: 100%;
+      padding: 10px;
+      border: 1px solid #ccc;
+      border-radius: 4px;
+    }
+
+    .chat-input button {
+      padding: 10px 20px;
+      border: none;
+      background-color: #007BFF;
+      color: white;
+      border-radius: 4px;
+      cursor: pointer;
+      margin-left: 10px;
+    }
+
+    .chat-input button:hover {
+      background-color: #0056b3;
+    }
+
+    .chat-message {
+      margin: 5px 0;
+    }
+
+    .chat-message span {
+      font-weight: bold;
+    }
+  </style>
+</head>
+<body>
+  <h1>Meeting Room</h1>
+  <video id="video" autoplay></video>
+  <div class="controls">
+    <button id="mute-button" class="button">
+      <img src="mute-icon.png" alt="Mute Icon" id="mute-icon">Mute
+    </button>
+    <button id="camera-button" class="button">
+      <img src="camera-on-icon.png" alt="Camera Icon" id="camera-icon">Turn Camera Off
+    </button>
+    <button id="share-button" class="button button-share">
+      <img src="share-icon.png" alt="Share Icon" id="share-icon">Share Screen
+    </button>
+    <button id="leave-button" class="button button-leave">
+      <img src="leave-icon.png" alt="Leave Icon" id="leave-icon">Leave Meeting
+    </button>
+  </div>
+  <p>Press <b>CTRL + ALT + M</b> to toggle mute/unmute</p>
+  <p>Press <b>CTRL + ALT + C</b> to toggle camera on/off</p>
+  <p>Hold <b>Space bar</b> to temporarily unmute</p>
+
+  <div class="chat-container" id="chat-container"></div>
+  <div class="chat-input">
+    <input type="text" id="chat-message" placeholder="Type your message here">
+    <button id="send-button">Send</button>
+  </div>
+
+  <script>
+    let isMuted = false;
+    let isCameraOn = true;
+    let isScreenSharing = false;
+    let stream;
+    let screenStream;
+
+    const muteButton = document.getElementById('mute-button');
+    const cameraButton = document.getElementById('camera-button');
+    const shareButton = document.getElementById('share-button');
+    const leaveButton = document.getElementById('leave-button');
+    const chatContainer = document.getElementById('chat-container');
+    const chatMessage = document.getElementById('chat-message');
+    const sendButton = document.getElementById('send-button');
+    const video = document.getElementById('video');
+    const muteIcon = document.getElementById('mute-icon');
+    const cameraIcon = document.getElementById('camera-icon');
+    const shareIcon = document.getElementById('share-icon');
+    const leaveIcon = document.getElementById('leave-icon');
+
+    // Access user's camera and microphone
+    async function startMedia() {
+      try {
+        stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
+        video.srcObject = stream;
+      } catch (err) {
+        console.error('Error accessing media devices.', err);
+      }
+    }
+
+    async function startScreenSharing() {
+      try {
+        screenStream = await navigator.mediaDevices.getDisplayMedia({ video: true });
+        const tracks = screenStream.getTracks();
+        tracks.forEach(track => video.srcObject.addTrack(track));
+      } catch (err) {
+        console.error('Error accessing screen.', err);
+      }
+    }
+
+    function stopScreenSharing() {
+      const tracks = video.srcObject.getTracks();
+      tracks.forEach(track => {
+        if (track.kind === 'video' && track.label === 'Screen') {
+          track.stop();
+        }
+      });
+    }
+
+    function toggleMute() {
+      isMuted = !isMuted;
+      const audioTracks = stream.getAudioTracks();
+      audioTracks.forEach(track => track.enabled = !isMuted);
+      muteButton.textContent = isMuted ? 'Unmute' : 'Mute';
+      muteButton.classList.toggle('button-muted', isMuted);
+      muteIcon.src = isMuted ? 'unmute-icon.png' : 'mute-icon.png';
+    }
+
+    function toggleCamera() {
+      isCameraOn = !isCameraOn;
+      const videoTracks = stream.getVideoTracks();
+      videoTracks.forEach(track => track.enabled = isCameraOn);
+      cameraButton.textContent = isCameraOn ? 'Turn Camera Off' : 'Turn Camera On';
+      cameraButton.classList.toggle('button-camera-off', !isCameraOn);
+      cameraIcon.src = isCameraOn ? 'camera-on-icon.png' : 'camera-off-icon.png';
+    }
+
+    function toggleScreenShare() {
+      if (isScreenSharing) {
+        stopScreenSharing();
+        shareButton.textContent = 'Share Screen';
+        shareIcon.src = 'share-icon.png';
+      } else {
+        startScreenSharing();
+        shareButton.textContent = 'Stop Sharing';
+        shareIcon.src = 'stop-share-icon.png';
+      }
+      isScreenSharing = !isScreenSharing;
+    }
+
+    function leaveMeeting() {
+      if (stream) {
+        stream.getTracks().forEach(track => track.stop());
+      }
+      if (screenStream) {
+        screenStream.getTracks().forEach(track => track.stop());
+      }
+      window.location.href = '/';
+    }
+
+    function sendMessage() {
+      const message = chatMessage.value.trim();
+      if (message) {
+        const messageElement = document.createElement('div');
+        messageElement.className = 'chat-message';
+        messageElement.innerHTML = `<span>You:</span> ${message}`;
+        chatContainer.appendChild(messageElement);
+        chatMessage.value = '';
+        chatContainer.scrollTop = chatContainer.scrollHeight;
+
+        // Simulate receiving the message in another chat room
+        // In a real application, this would be replaced by actual server-side logic
+        receiveMessage(message);
+      }
+    }
+
+    function receiveMessage(message) {
+      const messageElement = document.createElement('div');
+      messageElement.className = 'chat-message';
+      messageElement.innerHTML = `<span>Participant:</span> ${message}`;
+      chatContainer.appendChild(messageElement);
+      chatContainer.scrollTop = chatContainer.scrollHeight;
+      notifyUser(`New message: ${message}`);
+    }
+
+    function notifyUser(message) {
+      if (Notification.permission === 'granted') {
+        new Notification('New Chat Message', {
+          body: message,
+          icon: 'chat-icon.png' // Optional: add an icon for the notification
+        });
+      } else if (Notification.permission !== 'denied') {
+        Notification.requestPermission().then(permission => {
+          if (permission === 'granted') {
+            new Notification('New Chat Message', {
+              body: message,
+              icon: 'chat-icon.png'
+            });
+          }
+        });
+      }
+    }
+
+    muteButton.addEventListener('click', toggleMute);
+    cameraButton.addEventListener('click', toggleCamera);
+    shareButton.addEventListener('click', toggleScreenShare);
+    leaveButton.addEventListener('click', leaveMeeting);
+    sendButton.addEventListener('click', sendMessage);
+    chatMessage.addEventListener('keypress', function(event) {
+      if (event.key === 'Enter') {
+        sendMessage();
+        event.preventDefault();
+      }
+    });
+
+    document.addEventListener('keydown', function(event) {
+      if (event.ctrlKey && event.altKey && event.key === 'm') {
+        toggleMute();
+      }
+
+      if (event.ctrlKey && event.altKey && event.key === 'c') {
+        toggleCamera();
+      }
+
+      if (event.key === ' ') {
+        if (isMuted) {
+          stream.getAudioTracks().forEach(track => track.enabled = true);
+          muteButton.textContent = 'Unmute';
+          muteButton.classList.remove('button-muted');
+          muteIcon.src = 'unmute-icon.png';
+        }
+      }
+    });
+
+    document.addEventListener('keyup', function(event) {
+      if (event.key === ' ' && isMuted) {
+        stream.getAudioTracks().forEach(track => track.enabled = false);
+        muteButton.textContent = 'Mute';
+        muteButton.classList.add('button-muted');
+        muteIcon.src = 'mute-icon.png';
+      }
+    });
+
+    // Start media on page load
+    startMedia();
+  </script>
+</body>
+</html>

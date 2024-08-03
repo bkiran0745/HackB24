@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Sign Up</title>
+  <style>
+    body {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+      background-color: #f0f0f0;
+      font-family: Arial, sans-serif;
+    }
+
+    .container {
+      text-align: center;
+      background-color: #ffffff;
+      padding: 20px;
+      border-radius: 8px;
+      box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+      max-width: 500px;
+    }
+
+    label {
+      display: block;
+      margin: 10px 0 5px;
+    }
+
+    input[type="text"],
+    input[type="email"],
+    input[type="password"],
+    input[type="tel"],
+    select {
+      width: 100%;
+      padding: 8px;
+      margin-bottom: 10px;
+      box-sizing: border-box;
+      border: 1px solid #ccc;
+      border-radius: 4px;
+    }
+
+    input[type="checkbox"] {
+      margin-right: 5px;
+    }
+
+    button {
+      display: block;
+      width: 200px;
+      margin: 10px auto;
+      padding: 10px 0;
+      font-size: 18px;
+      color: white;
+      background-color: #007BFF;
+      text-align: center;
+      text-decoration: none;
+      border-radius: 5px;
+      border: none;
+      cursor: pointer;
+    }
+
+    button:hover {
+      background-color: #0056b3;
+    }
+
+    p {
+      margin: 10px 0;
+    }
+
+    a {
+      color: #007BFF;
+      text-decoration: none;
+    }
+
+    a:hover {
+      text-decoration: underline;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>Sign Up</h1>
+    <form id="signup-form">
+      <label for="username">User Name:</label>
+      <input type="text" id="username" required minlength="2">
+      
+      <label for="usn">USN:</label>
+      <input type="text" id="usn" required minlength="8" maxlength="15">
+      
+      <label for="department">Department:</label>
+      <input type="text" id="department" required>
+      
+      <label for="sem">Semester:</label>
+      <select id="sem" required>
+        <option value="" disabled selected>Select Semester</option>
+        <option value="1">1</option>
+        <option value="2">2</option>
+        <option value="3">3</option>
+        <option value="4">4</option>
+        <option value="5">5</option>
+        <option value="6">6</option>
+        <option value="7">7</option>
+        <option value="8">8</option>
+      </select>
+      
+      <label for="phone">Phone Number:</label>
+      <input type="tel" id="phone" required pattern="^\+91\d{10}$" placeholder="+91XXXXXXXXXX">
+      
+      <label for="email">Email:</label>
+      <input type="email" id="email" required>
+      
+      <label for="password">Password:</label>
+      <input type="password" id="password" required>
+      
+      <input type="checkbox" id="show-password">
+      <label for="show-password">Show my password</label>
+      
+      <button type="submit">Sign Up</button>
+    </form>
+    <p>Already have an account? <a href="/">Sign in</a></p>
+  </div>
+
+  <script>
+    document.getElementById('show-password').addEventListener('change', function() {
+      const passwordInput = document.getElementById('password');
+      passwordInput.type = this.checked ? 'text' : 'password';
+    });
+
+    document.getElementById('signup-form').addEventListener('submit', function(event) {
+      event.preventDefault();
+
+      const username = document.getElementById('username').value;
+      const usn = document.getElementById('usn').value;
+      const department = document.getElementById('department').value;
+      const sem = document.getElementById('sem').value;
+      const phone = document.getElementById('phone').value;
+      const email = document.getElementById('email').value;
+      const password = document.getElementById('password').value;
+      
+      const passwordPattern = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/;
+
+      if (!passwordPattern.test(password)) {
+        alert('Password must be at least 8 characters long, include one uppercase letter, one lowercase letter, one number, and one special character.');
+        return;
+      }
+
+      fetch('/signup', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ username, usn, department, sem, phone, email, password })
+      })
+      .then(response => response.json())
+      .then(data => {
+        if (data.success) {
+          alert('Sign Up Successful');
+          window.location.href = '/';
+        } else {
+          alert('Sign Up failed: ' + data.message);
+        }
+      })
+      .catch(error => {
+        console.error('Error:', error);
+      });
+    });
+  </script>
+</body>
+</html>

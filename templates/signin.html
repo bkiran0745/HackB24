@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Sign In</title>
+  <style>
+    body {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+      background-color: #f0f0f0;
+      font-family: Arial, sans-serif;
+    }
+
+    .container {
+      text-align: center;
+      background-color: #ffffff;
+      padding: 20px;
+      border-radius: 8px;
+      box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+    }
+
+    label {
+      display: block;
+      margin: 10px 0 5px;
+    }
+
+    input[type="email"],
+    input[type="password"] {
+      width: 100%;
+      padding: 8px;
+      margin-bottom: 10px;
+      box-sizing: border-box;
+      border: 1px solid #ccc;
+      border-radius: 4px;
+    }
+
+    input[type="checkbox"] {
+      margin-right: 5px;
+    }
+
+    .button {
+      display: block;
+      width: 200px;
+      margin: 10px auto;
+      padding: 10px 0;
+      font-size: 18px;
+      color: white;
+      background-color: #007BFF;
+      text-align: center;
+      text-decoration: none;
+      border-radius: 5px;
+      border: none;
+      cursor: pointer;
+    }
+
+    .button:disabled {
+      background-color: #ccc;
+      cursor: not-allowed;
+    }
+
+    .button:hover:not(:disabled) {
+      background-color: #0056b3;
+    }
+
+    .error {
+      color: red;
+      font-size: 14px;
+      display: none;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>Sign In</h1>
+    <form id="signin-form">
+      <label for="email">Email:</label>
+      <input type="email" id="email" name="email" required>
+      <div id="email-error" class="error">Invalid email format</div>
+
+      <label for="password">Password:</label>
+      <input type="password" id="password" name="password" required>
+      <div id="signin-error" class="error">Invalid email or password</div>
+
+      <input type="checkbox" id="show-password">
+      <label for="show-password">Show my password</label>
+      
+      <button id="signin-button" type="submit" class="button">Sign In</button>
+    </form>
+    <p><a href="/forgotpassword">Forgot your password?</a></p>
+    <p>Don't have an account? <a href="/signup">Sign up</a></p>
+  </div>
+
+  <script>
+    let loginAttempts = 0;
+    const maxAttempts = 3;
+
+    document.getElementById('show-password').addEventListener('change', function() {
+      const passwordInput = document.getElementById('password');
+      passwordInput.type = this.checked ? 'text' : 'password';
+    });
+
+    document.getElementById('email').addEventListener('input', function() {
+      const emailInput = document.getElementById('email');
+      const emailError = document.getElementById('email-error');
+      const signinButton = document.getElementById('signin-button');
+
+      if (emailInput.checkValidity()) {
+        emailError.style.display = 'none';
+        signinButton.disabled = false;
+      } else {
+        emailError.style.display = 'block';
+        signinButton.disabled = true;
+      }
+    });
+
+    document.getElementById('signin-form').addEventListener('submit', function(event) {
+      event.preventDefault();
+
+      const email = document.getElementById('email').value;
+      const password = document.getElementById('password').value;
+
+      const passwordPattern = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/;
+
+      if (!passwordPattern.test(password)) {
+        alert('Wrong format');
+        return;
+      }
+
+      fetch('/signin', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ email, password })
+      })
+      .then(response => response.json())
+      .then(data => {
+        if (data.success) {
+          window.location.href = '/meeting-options';
+        } else {
+          loginAttempts++;
+          const signinError = document.getElementById('signin-error');
+          signinError.textContent = 'Invalid email or password';
+          signinError.style.display = 'block';
+
+          if (loginAttempts >= maxAttempts) {
+            signinError.textContent = 'Your account is blocked due to multiple failed login attempts';
+            document.getElementById('signin-button').disabled = true;
+          }
+        }
+      })
+      .catch(error => {
+        console.error('Error:', error);
+      });
+    });
+  </script>
+</body>
+</html>

@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Join Meeting</title>
+  <style>
+    body {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+      background-color: #f0f0f0;
+      font-family: Arial, sans-serif;
+    }
+
+    .container {
+      text-align: center;
+      background-color: #ffffff;
+      padding: 20px;
+      border-radius: 8px;
+      box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+    }
+
+    .form-group {
+      margin-bottom: 15px;
+    }
+
+    label {
+      display: block;
+      margin-bottom: 5px;
+    }
+
+    input {
+      width: 100%;
+      padding: 8px;
+      box-sizing: border-box;
+      border: 1px solid #ccc;
+      border-radius: 4px;
+    }
+
+    .button {
+      display: inline-block;
+      padding: 10px 20px;
+      font-size: 16px;
+      color: white;
+      background-color: #007BFF;
+      text-align: center;
+      text-decoration: none;
+      border-radius: 5px;
+      border: none;
+      cursor: pointer;
+    }
+
+    .button:disabled {
+      background-color: #ccc;
+      cursor: not-allowed;
+    }
+
+    .button:hover:not(:disabled) {
+      background-color: #0056b3;
+    }
+
+    .error {
+      color: red;
+      font-size: 14px;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>Join Meeting</h1>
+    <form id="join-meeting-form" method="POST" action="/join">
+      <div class="form-group">
+        <label for="meeting-code">Meeting Code:</label>
+        <input type="text" id="meeting-code" name="meeting-code" placeholder="xxx-xxx-xxx" required>
+        <div id="error-message" class="error" style="display: none;">Invalid meeting code format.</div>
+      </div>
+      <button type="submit" id="join-button" class="button" disabled>Join Meeting</button>
+    </form>
+    {% if error %}
+    <p class="error">{{ error }}</p>
+    {% endif %}
+  </div>
+
+  <script>
+    document.getElementById('meeting-code').addEventListener('input', function() {
+      const meetingCodeInput = document.getElementById('meeting-code');
+      const joinButton = document.getElementById('join-button');
+      const errorMessage = document.getElementById('error-message');
+
+      const meetingCodePattern = /^[a-z]{3}-[a-z]{3}-[a-z]{3}$/;
+
+      if (meetingCodePattern.test(meetingCodeInput.value)) {
+        errorMessage.style.display = 'none';
+        joinButton.disabled = false;
+      } else {
+        errorMessage.style.display = 'block';
+        joinButton.disabled = true;
+      }
+    });
+  </script>
+</body>
+</html>
